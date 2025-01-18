@@ -58,6 +58,13 @@ const AppNavbar = () => {
                 </NavDropdown.Item>
               </NavDropdown>
             )}
+
+            {/* Appointments Link as a separate button */}
+            {hasDoctorRole && (
+              <Nav.Link as={Link} to="/appointments/by-doctor">
+                My Appointments
+              </Nav.Link>
+            )}
           </Nav>
 
           {/* User Menu */}

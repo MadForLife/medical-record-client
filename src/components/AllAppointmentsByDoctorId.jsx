@@ -6,6 +6,7 @@ import CreateAppointmentModal from "./CreateAppointmentModal"; // Import the Cre
 import EditAppointmentModal from "./EditAppointmentModal"; // Import the Edit Appointment Modal
 import CreateDiagnoseModal from "./CreateDiagnoseModal"; // Import the Create Diagnose Modal
 import CreatePrescriptionModal from "./CreatePrescriptionModal";
+import CreateSickLeaveModal from "./CreateSickLeaveModal";
 
 const AllAppointmentsByDoctorId = () => {
   const { keycloak, isAuthenticated } = useContext(KeycloakContext);
@@ -21,6 +22,11 @@ const AllAppointmentsByDoctorId = () => {
     useState(false); // Manage Create Prescription Modal visibility
   const [appointmentIdToPrescribe, setAppointmentIdToPrescribe] =
     useState(null); // Store appointment ID for prescription
+
+  const [showCreateSickLeaveModal, setShowCreateSickLeaveModal] =
+    useState(false);
+  const [appointmentIdForSickLeave, setAppointmentIdForSickLeave] =
+    useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -78,6 +84,15 @@ const AllAppointmentsByDoctorId = () => {
 
   const handleCloseCreatePrescriptionModal = () => {
     setShowCreatePrescriptionModal(false); // Close the Create Prescription modal
+  };
+
+  const handleCreateSickLeave = (appointmentId) => {
+    setAppointmentIdForSickLeave(appointmentId); // Store appointment ID for sick leave creation
+    setShowCreateSickLeaveModal(true); // Show the Sick Leave modal
+  };
+
+  const handleCloseCreateSickLeaveModal = () => {
+    setShowCreateSickLeaveModal(false); // Close the Sick Leave modal
   };
 
   const refreshAppointments = () => {
@@ -152,7 +167,7 @@ const AllAppointmentsByDoctorId = () => {
                   Edit
                 </Button>
                 <Button
-                  variant="dark"
+                  variant="secondary"
                   size="sm"
                   className="ms-2"
                   onClick={() => handleCreateDiagnose(appointment.id)}
@@ -160,14 +175,21 @@ const AllAppointmentsByDoctorId = () => {
                   Add Diagnose
                 </Button>
                 <Button
-                  variant="dark"
+                  variant="secondary"
                   size="sm"
                   className="ms-2"
                   onClick={() => handleCreatePrescription(appointment.id)}
                 >
                   Add Prescription
                 </Button>
-
+                <Button
+                  variant="success"
+                  size="sm"
+                  className="ms-2"
+                  onClick={() => handleCreateSickLeave(appointment.id)} // Open Sick Leave modal
+                >
+                  Add Sick Leave
+                </Button>
                 <Button
                   variant="danger"
                   size="sm"
@@ -212,6 +234,14 @@ const AllAppointmentsByDoctorId = () => {
         show={showCreatePrescriptionModal}
         handleClose={handleCloseCreatePrescriptionModal}
         appointmentId={appointmentIdToPrescribe}
+        refreshAppointments={refreshAppointments}
+      />
+
+      {/* Create Sick Leave Modal */}
+      <CreateSickLeaveModal
+        show={showCreateSickLeaveModal}
+        handleClose={handleCloseCreateSickLeaveModal}
+        appointmentId={appointmentIdForSickLeave}
         refreshAppointments={refreshAppointments}
       />
     </div>

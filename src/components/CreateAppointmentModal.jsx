@@ -1,146 +1,140 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import {
+  Modal,
+  Button,
+  Form,
+  Spinner,
+  Alert,
+  InputGroup,
+} from "react-bootstrap";
 import axios from "axios";
-import { Modal, Button, Form, Spinner } from "react-bootstrap";
-import { KeycloakContext } from "../keycloak/keycloak-provider"; // Make sure the path is correct
+import { KeycloakContext } from "../keycloak/keycloak-provider";
 
 const CreateAppointmentModal = ({
   show,
   handleClose,
-  editMode,
-  currentAppointment,
-  patientId,
-  appointmentDate,
-  setPatientId,
-  setAppointmentDate,
+  doctorId,
+  refreshAppointments,
 }) => {
-  const { keycloak } = useContext(KeycloakContext); // Access Keycloak context
+  const [patientSearch, setPatientSearch] = useState("");
   const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [appointmentDate, setAppointmentDate] = useState("");
   const [loadingPatients, setLoadingPatients] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch all patients when the modal is shown
+  const { keycloak } = useContext(KeycloakContext);
+
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:8080/api.medical-record/v1/patients/simple"
-        );
-        setPatients(response.data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load patients.");
-      } finally {
-        setLoadingPatients(false);
-      }
-    };
-
     if (show) {
-      fetchPatients();
+      // Fetch the list of patients when the modal is shown
+      axios
+        .get("http://localhost:8080/api.medical-record/v1/patients/simple", {
+          headers: {
+            Authorization: `Bearer ${keycloak.token}`, // Use Keycloak token
+          },
+        })
+        .then((response) => {
+          setPatients(response.data);
+          setLoadingPatients(false);
+        })
+        .catch((err) => {
+          setError("Failed to fetch patients. Please try again later.");
+          setLoadingPatients(false);
+        });
     }
-  }, [show]);
+  }, [show, keycloak.token]);
 
-  // Filter patients based on search query
-  const filteredPatients = patients.filter((patient) => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      patient.ucn.toLowerCase().includes(searchLower) ||
-      patient.firstName.toLowerCase().includes(searchLower) ||
-      patient.lastName.toLowerCase().includes(searchLower)
-    );
-  });
+  const handleSearchChange = (e) => {
+    setPatientSearch(e.target.value);
+  };
 
-  const handleSave = async () => {
-    try {
-      // Ensure required fields are filled
-      if (!patientId || !appointmentDate) {
-        alert("Please fill in all fields.");
-        return;
-      }
+  const filteredPatients = patients.filter((patient) =>
+    `${patient.ucn} ${patient.firstName} ${patient.lastName}`
+      .toLowerCase()
+      .includes(patientSearch.toLowerCase())
+  );
 
-      // Get doctorId from Keycloak token
-      const doctorId = keycloak.tokenParsed?.sub; // Assuming the doctor ID is in the token
-
-      // Prepare the data for the request
-      const appointmentData = {
-        patientId: patientId,
-        doctorId: doctorId,
-        appointmentDate: appointmentDate,
+  const handleSubmit = () => {
+    if (selectedPatient && appointmentDate) {
+      const payload = {
+        patientId: selectedPatient.id,
+        doctorId,
+        appointmentDate,
       };
 
-      // Send the POST request to the backend
-      const response = await axios.post(
-        "http://localhost:8080/api.medical-record/v1/appointments/create",
-        appointmentData,
-        {
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`, // Include the Authorization header with the token
-          },
-        }
-      );
-
-      // Handle the response (e.g., show success or update UI)
-      console.log("Appointment created:", response.data);
-      handleClose(); // Close the modal after success
-    } catch (error) {
-      console.error("Error creating appointment:", error);
-      setError("Failed to save the appointment. Please try again.");
+      axios
+        .post(
+          "http://localhost:8080/api.medical-record/v1/appointments/create",
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${keycloak.token}`, // Use Keycloak token
+            },
+          }
+        )
+        .then(() => {
+          refreshAppointments(); // Refresh appointments after creating a new one
+          handleClose(); // Close the modal
+        })
+        .catch((err) => {
+          setError("Failed to create appointment. Please try again later.");
+        });
     }
   };
 
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>
-          {editMode ? "Edit Appointment" : "Create Appointment"}
-        </Modal.Title>
+        <Modal.Title>Create Appointment</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {error && <Alert variant="danger">{error}</Alert>}
         {loadingPatients ? (
-          <div className="text-center">
-            <Spinner animation="border" variant="primary" />
-            <p>Loading patients...</p>
+          <div className="d-flex justify-content-center align-items-center">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
           </div>
-        ) : error ? (
-          <div className="text-center text-danger">{error}</div>
         ) : (
           <>
-            {/* Search bar */}
-            <Form.Group controlId="searchPatient">
-              <Form.Label>Search Patients</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Search by UCN, First or Last Name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  padding: "0.75rem",
-                  borderRadius: "5px",
-                  border: "1px solid #ccc",
-                  boxShadow: "0 0 5px rgba(0, 0, 0, 0.1)",
-                  backgroundColor: "#f9f9f9",
-                }}
-              />
+            <Form.Group className="mb-3">
+              <Form.Label>Search Patient</Form.Label>
+              <InputGroup>
+                <Form.Control
+                  type="text"
+                  placeholder="Search by UCN, First Name, Last Name"
+                  value={patientSearch}
+                  onChange={handleSearchChange}
+                />
+              </InputGroup>
+              {filteredPatients.length > 0 && (
+                <ul className="list-group mt-2">
+                  {filteredPatients.map((patient) => (
+                    <li
+                      key={patient.id}
+                      className={`list-group-item ${
+                        selectedPatient && selectedPatient.id === patient.id
+                          ? "bg-primary text-white"
+                          : ""
+                      }`}
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor:
+                          selectedPatient && selectedPatient.id === patient.id
+                            ? "#007bff"
+                            : "",
+                      }}
+                      onClick={() => setSelectedPatient(patient)}
+                    >
+                      {`${patient.ucn} - ${patient.firstName} ${patient.lastName}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Form.Group>
 
-            {/* Patient Dropdown */}
-            <Form.Group controlId="patientId">
-              <Form.Label>Patient</Form.Label>
-              <Form.Control
-                as="select"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-              >
-                <option value="">Select Patient</option>
-                {filteredPatients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.ucn} - {patient.firstName} {patient.lastName}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
-
-            <Form.Group controlId="appointmentDate">
+            <Form.Group className="mb-3">
               <Form.Label>Appointment Date</Form.Label>
               <Form.Control
                 type="datetime-local"
@@ -155,8 +149,12 @@ const CreateAppointmentModal = ({
         <Button variant="secondary" onClick={handleClose}>
           Close
         </Button>
-        <Button variant="primary" onClick={handleSave}>
-          {editMode ? "Save Changes" : "Create Appointment"}
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={!selectedPatient || !appointmentDate}
+        >
+          Create Appointment
         </Button>
       </Modal.Footer>
     </Modal>

@@ -1,221 +1,197 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { Container, Table, Spinner, Button, Alert } from "react-bootstrap";
+import { Table, Spinner, Alert, Button } from "react-bootstrap";
 import { KeycloakContext } from "../keycloak/keycloak-provider";
-import EditAppointment from "./EditAppointment.jsx";
-import CreateAppointmentModal from "./CreateAppointmentModal.jsx";
+import CreateAppointmentModal from "./CreateAppointmentModal"; // Import the Create Appointment Modal
+import EditAppointmentModal from "./EditAppointmentModal"; // Import the Edit Appointment Modal
+import CreateDiagnoseModal from "./CreateDiagnoseModal"; // Import the Create Diagnose Modal
 
 const AllAppointmentsByDoctorId = () => {
   const { keycloak, isAuthenticated } = useContext(KeycloakContext);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [currentAppointment, setCurrentAppointment] = useState(null);
-  const [appointmentDate, setAppointmentDate] = useState("");
-  const [patientId, setPatientId] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false); // Manage Create Appointment Modal visibility
+  const [showEditModal, setShowEditModal] = useState(false); // Manage Edit Appointment Modal visibility
+  const [showCreateDiagnoseModal, setShowCreateDiagnoseModal] = useState(false); // Manage Create Diagnose Modal visibility
+  const [appointmentIdToEdit, setAppointmentIdToEdit] = useState(null); // Store appointment ID for editing
+  const [appointmentIdToDiagnose, setAppointmentIdToDiagnose] = useState(null); // Store appointment ID for diagnose
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      if (isAuthenticated) {
-        try {
-          const doctorId = keycloak.tokenParsed?.sub;
-          const apiUrl = `http://localhost:8080/api.medical-record/v1/appointments/simple/${doctorId}/doctor`;
+    if (isAuthenticated) {
+      const doctorId = keycloak.tokenParsed.sub; // Extract the doctor ID from the token
+      const endpoint = `http://localhost:8080/api.medical-record/v1/appointments/simple/${doctorId}/doctor`;
 
-          const response = await axios.get(apiUrl, {
-            headers: {
-              Authorization: `Bearer ${keycloak.token}`,
-            },
-          });
-
-          setAppointments(response.data);
-        } catch (err) {
-          console.error(err);
-          setError("Failed to fetch appointments. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchAppointments();
-  }, [keycloak, isAuthenticated]);
-
-  const handleShowModal = (appointment = null) => {
-    if (appointment) {
-      setEditMode(true);
-      setCurrentAppointment(appointment);
-      setPatientId(appointment.patient.id);
-      setAppointmentDate(appointment.appointmentDate);
-    } else {
-      setEditMode(false);
-      setPatientId("");
-      setAppointmentDate("");
-    }
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setEditMode(false);
-    setPatientId("");
-    setAppointmentDate("");
-    setCurrentAppointment(null);
-    setError(null);
-  };
-
-  const handleSaveAppointment = async () => {
-    const apiUrl = editMode
-      ? `http://localhost:8080/api.medical-record/v1/appointments/${currentAppointment.id}/update`
-      : `http://localhost:8080/api.medical-record/v1/appointments`;
-
-    try {
-      const response = await axios({
-        method: editMode ? "put" : "post",
-        url: apiUrl,
-        headers: {
-          Authorization: `Bearer ${keycloak.token}`,
-        },
-        data: {
-          patientId,
-          doctorId: keycloak.tokenParsed?.sub,
-          appointmentDate,
-        },
-      });
-
-      setAppointments((prevAppointments) =>
-        editMode
-          ? prevAppointments.map((appt) =>
-              appt.id === response.data.id ? response.data : appt
-            )
-          : [...prevAppointments, response.data]
-      );
-
-      handleCloseModal();
-    } catch (err) {
-      console.error(err);
-      setError("Failed to save the appointment.");
-    }
-  };
-
-  const handleDeleteAppointment = async (id) => {
-    try {
-      await axios.delete(
-        `http://localhost:8080/api.medical-record/v1/appointments/${id}`,
-        {
+      axios
+        .get(endpoint, {
           headers: {
             Authorization: `Bearer ${keycloak.token}`,
           },
-        }
-      );
-
-      setAppointments(
-        appointments.filter((appointment) => appointment.id !== id)
-      );
-    } catch (err) {
-      console.error(err);
-      setError("Failed to delete the appointment.");
+        })
+        .then((response) => {
+          setAppointments(response.data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Error fetching appointments:", err);
+          setError("Failed to fetch appointments. Please try again later.");
+          setLoading(false);
+        });
     }
+  }, [isAuthenticated, keycloak]);
+
+  const handleCreateAppointment = () => {
+    setShowCreateModal(true); // Show modal when Create Appointment is clicked
+  };
+
+  const handleCloseCreateModal = () => {
+    setShowCreateModal(false); // Close the Create Appointment modal
+  };
+
+  const handleEditAppointment = (appointmentId) => {
+    setAppointmentIdToEdit(appointmentId); // Store the ID of the appointment to be edited
+    setShowEditModal(true); // Show the Edit Appointment modal
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false); // Close the Edit Appointment modal
+  };
+
+  const handleCreateDiagnose = (appointmentId) => {
+    setAppointmentIdToDiagnose(appointmentId); // Store the ID of the appointment to be diagnosed
+    setShowCreateDiagnoseModal(true); // Show the Create Diagnose modal
+  };
+
+  const handleCloseCreateDiagnoseModal = () => {
+    setShowCreateDiagnoseModal(false); // Close the Create Diagnose modal
+  };
+
+  const refreshAppointments = () => {
+    const doctorId = keycloak.tokenParsed.sub;
+    const endpoint = `http://localhost:8080/api.medical-record/v1/appointments/simple/${doctorId}/doctor`;
+
+    axios
+      .get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+        },
+      })
+      .then((response) => {
+        setAppointments(response.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching appointments:", err);
+        setError("Failed to fetch appointments. Please try again later.");
+      });
   };
 
   if (loading) {
     return (
-      <Container className="text-center mt-5">
-        <Spinner animation="border" variant="primary" />
-        <p>Loading appointments...</p>
-      </Container>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "100vh" }}
+      >
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
     );
   }
 
-  if (error && !showModal) {
-    return (
-      <Container className="text-center mt-5">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
+  if (error) {
+    return <Alert variant="danger">{error}</Alert>;
   }
 
   return (
-    <Container className="mt-5">
-      <h2>Appointments</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
-      <Button variant="primary" onClick={() => handleShowModal()}>
+    <div className="container mt-5">
+      <h2 className="mb-4">Appointments</h2>
+      <Button variant="primary" onClick={handleCreateAppointment}>
         Create Appointment
       </Button>
-      {appointments.length > 0 ? (
-        <Table striped bordered hover className="mt-3">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Ucn</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Health Insured</th>
-              <th>Doctor</th>
-              <th>Appointment Date</th>
-              <th>Actions</th>
+      <Table striped bordered hover>
+        <thead>
+          <tr>
+            <th>UCN</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Health Insured</th>
+            <th>Doctor</th>
+            <th>Appointment Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {appointments.map((appointment) => (
+            <tr key={appointment.id}>
+              <td>{appointment.patient.ucn}</td>
+              <td>{appointment.patient.firstName}</td>
+              <td>{appointment.patient.lastName}</td>
+              <td>{appointment.patient.isHealthInsured ? "Yes" : "No"}</td>
+              <td>{`${appointment.doctor.firstName} ${appointment.doctor.lastName}`}</td>
+              <td>{new Date(appointment.appointmentDate).toLocaleString()}</td>
+              <td>
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={() => handleEditAppointment(appointment.id)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="ms-2"
+                  onClick={() => handleCreateDiagnose(appointment.id)}
+                >
+                  Create Diagnose
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="ms-2"
+                  onClick={() => handleAssignPrescription(appointment.id)}
+                >
+                  Assign Prescription
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="ms-2"
+                  onClick={() => handleDeleteAppointment(appointment.id)}
+                >
+                  Delete
+                </Button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {appointments.map((appointment, index) => (
-              <tr key={appointment.id}>
-                <td>{index + 1}</td>
-                <td>{appointment.patient.ucn}</td>
-                <td>{appointment.patient.firstName}</td>
-                <td>{appointment.patient.lastName}</td>
-                <td>{appointment.patient.isHealthInsured ? "Yes" : "No"}</td>
-                <td>{`${appointment.doctor.firstName} ${appointment.doctor.lastName}`}</td>
-                <td>{appointment.appointmentDate}</td>
-                <td>
-                  <Button
-                    variant="warning"
-                    size="sm"
-                    onClick={() => handleShowModal(appointment)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="ms-2"
-                    onClick={() => handleDeleteAppointment(appointment.id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <p>No appointments found.</p>
-      )}
+          ))}
+        </tbody>
+      </Table>
 
-      {/* Edit/Create Appointment Modal */}
-      {editMode ? (
-        <EditAppointment
-          show={showModal}
-          handleClose={handleCloseModal}
-          currentAppointment={currentAppointment}
-          patientId={patientId}
-          appointmentDate={appointmentDate}
-          setPatientId={setPatientId}
-          setAppointmentDate={setAppointmentDate}
-          handleSaveAppointment={handleSaveAppointment}
-        />
-      ) : (
-        <CreateAppointmentModal
-          show={showModal}
-          handleClose={handleCloseModal}
-          patientId={patientId}
-          appointmentDate={appointmentDate}
-          setPatientId={setPatientId}
-          setAppointmentDate={setAppointmentDate}
-          handleSaveAppointment={handleSaveAppointment}
-        />
-      )}
-    </Container>
+      {/* Create Appointment Modal */}
+      <CreateAppointmentModal
+        show={showCreateModal}
+        handleClose={handleCloseCreateModal}
+        doctorId={keycloak.tokenParsed.sub}
+        refreshAppointments={refreshAppointments}
+      />
+
+      {/* Edit Appointment Modal */}
+      <EditAppointmentModal
+        show={showEditModal}
+        handleClose={handleCloseEditModal}
+        appointmentId={appointmentIdToEdit}
+        doctorId={keycloak.tokenParsed.sub}
+        refreshAppointments={refreshAppointments}
+      />
+
+      {/* Create Diagnose Modal */}
+      <CreateDiagnoseModal
+        show={showCreateDiagnoseModal}
+        handleClose={handleCloseCreateDiagnoseModal}
+        appointmentId={appointmentIdToDiagnose}
+        refreshAppointments={refreshAppointments}
+      />
+    </div>
   );
 };
 

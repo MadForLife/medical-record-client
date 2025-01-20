@@ -1,15 +1,9 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import {
-  Container,
-  Table,
-  Spinner,
-  Button,
-  Modal,
-  Form,
-} from "react-bootstrap";
+import { Container, Table, Spinner, Button, Alert } from "react-bootstrap";
 import { KeycloakContext } from "../keycloak/keycloak-provider";
-import CreateAppointmentModal from "./CreateAppointmentModal.jsx"; // Import the CreateAppointmentModal component
+import EditAppointment from "./EditAppointment.jsx";
+import CreateAppointmentModal from "./CreateAppointmentModal.jsx";
 
 const AllAppointmentsByDoctorId = () => {
   const { keycloak, isAuthenticated } = useContext(KeycloakContext);
@@ -64,44 +58,32 @@ const AllAppointmentsByDoctorId = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setAppointmentDate("");
+    setEditMode(false);
     setPatientId("");
+    setAppointmentDate("");
     setCurrentAppointment(null);
+    setError(null);
   };
 
   const handleSaveAppointment = async () => {
     const apiUrl = editMode
-      ? `http://localhost:8080/api.medical-record/v1/appointments/${currentAppointment.id}`
-      : "http://localhost:8080/api.medical-record/v1/appointments"; // Update API path if needed
+      ? `http://localhost:8080/api.medical-record/v1/appointments/${currentAppointment.id}/update`
+      : `http://localhost:8080/api.medical-record/v1/appointments`;
 
     try {
-      const response = editMode
-        ? await axios.put(
-            apiUrl,
-            {
-              patientId,
-              appointmentDate,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${keycloak.token}`,
-              },
-            }
-          )
-        : await axios.post(
-            apiUrl,
-            {
-              patientId,
-              appointmentDate,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${keycloak.token}`,
-              },
-            }
-          );
+      const response = await axios({
+        method: editMode ? "put" : "post",
+        url: apiUrl,
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+        },
+        data: {
+          patientId,
+          doctorId: keycloak.tokenParsed?.sub,
+          appointmentDate,
+        },
+      });
 
-      // Reload appointments after saving
       setAppointments((prevAppointments) =>
         editMode
           ? prevAppointments.map((appt) =>
@@ -109,6 +91,7 @@ const AllAppointmentsByDoctorId = () => {
             )
           : [...prevAppointments, response.data]
       );
+
       handleCloseModal();
     } catch (err) {
       console.error(err);
@@ -145,10 +128,10 @@ const AllAppointmentsByDoctorId = () => {
     );
   }
 
-  if (error) {
+  if (error && !showModal) {
     return (
       <Container className="text-center mt-5">
-        <p className="text-danger">{error}</p>
+        <Alert variant="danger">{error}</Alert>
       </Container>
     );
   }
@@ -156,6 +139,7 @@ const AllAppointmentsByDoctorId = () => {
   return (
     <Container className="mt-5">
       <h2>Appointments</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
       <Button variant="primary" onClick={() => handleShowModal()}>
         Create Appointment
       </Button>
@@ -208,17 +192,29 @@ const AllAppointmentsByDoctorId = () => {
         <p>No appointments found.</p>
       )}
 
-      {/* Appointment Modal */}
-      <CreateAppointmentModal
-        show={showModal}
-        handleClose={handleCloseModal}
-        editMode={editMode}
-        currentAppointment={currentAppointment}
-        patientId={patientId}
-        appointmentDate={appointmentDate}
-        setPatientId={setPatientId}
-        setAppointmentDate={setAppointmentDate}
-      />
+      {/* Edit/Create Appointment Modal */}
+      {editMode ? (
+        <EditAppointment
+          show={showModal}
+          handleClose={handleCloseModal}
+          currentAppointment={currentAppointment}
+          patientId={patientId}
+          appointmentDate={appointmentDate}
+          setPatientId={setPatientId}
+          setAppointmentDate={setAppointmentDate}
+          handleSaveAppointment={handleSaveAppointment}
+        />
+      ) : (
+        <CreateAppointmentModal
+          show={showModal}
+          handleClose={handleCloseModal}
+          patientId={patientId}
+          appointmentDate={appointmentDate}
+          setPatientId={setPatientId}
+          setAppointmentDate={setAppointmentDate}
+          handleSaveAppointment={handleSaveAppointment}
+        />
+      )}
     </Container>
   );
 };

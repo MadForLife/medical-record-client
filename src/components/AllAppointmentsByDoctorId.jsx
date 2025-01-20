@@ -5,6 +5,7 @@ import { KeycloakContext } from "../keycloak/keycloak-provider";
 import CreateAppointmentModal from "./CreateAppointmentModal"; // Import the Create Appointment Modal
 import EditAppointmentModal from "./EditAppointmentModal"; // Import the Edit Appointment Modal
 import CreateDiagnoseModal from "./CreateDiagnoseModal"; // Import the Create Diagnose Modal
+import CreatePrescriptionModal from "./CreatePrescriptionModal";
 
 const AllAppointmentsByDoctorId = () => {
   const { keycloak, isAuthenticated } = useContext(KeycloakContext);
@@ -16,6 +17,10 @@ const AllAppointmentsByDoctorId = () => {
   const [showCreateDiagnoseModal, setShowCreateDiagnoseModal] = useState(false); // Manage Create Diagnose Modal visibility
   const [appointmentIdToEdit, setAppointmentIdToEdit] = useState(null); // Store appointment ID for editing
   const [appointmentIdToDiagnose, setAppointmentIdToDiagnose] = useState(null); // Store appointment ID for diagnose
+  const [showCreatePrescriptionModal, setShowCreatePrescriptionModal] =
+    useState(false); // Manage Create Prescription Modal visibility
+  const [appointmentIdToPrescribe, setAppointmentIdToPrescribe] =
+    useState(null); // Store appointment ID for prescription
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -64,6 +69,15 @@ const AllAppointmentsByDoctorId = () => {
 
   const handleCloseCreateDiagnoseModal = () => {
     setShowCreateDiagnoseModal(false); // Close the Create Diagnose modal
+  };
+
+  const handleCreatePrescription = (appointmentId) => {
+    setAppointmentIdToPrescribe(appointmentId); // Store the ID of the appointment to be prescribed
+    setShowCreatePrescriptionModal(true); // Show the Create Prescription modal
+  };
+
+  const handleCloseCreatePrescriptionModal = () => {
+    setShowCreatePrescriptionModal(false); // Close the Create Prescription modal
   };
 
   const refreshAppointments = () => {
@@ -138,21 +152,22 @@ const AllAppointmentsByDoctorId = () => {
                   Edit
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="dark"
                   size="sm"
                   className="ms-2"
                   onClick={() => handleCreateDiagnose(appointment.id)}
                 >
-                  Create Diagnose
+                  Add Diagnose
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="dark"
                   size="sm"
                   className="ms-2"
-                  onClick={() => handleAssignPrescription(appointment.id)}
+                  onClick={() => handleCreatePrescription(appointment.id)}
                 >
-                  Assign Prescription
+                  Add Prescription
                 </Button>
+
                 <Button
                   variant="danger"
                   size="sm"
@@ -189,6 +204,14 @@ const AllAppointmentsByDoctorId = () => {
         show={showCreateDiagnoseModal}
         handleClose={handleCloseCreateDiagnoseModal}
         appointmentId={appointmentIdToDiagnose}
+        refreshAppointments={refreshAppointments}
+      />
+
+      {/* Create Prescription Modal */}
+      <CreatePrescriptionModal
+        show={showCreatePrescriptionModal}
+        handleClose={handleCloseCreatePrescriptionModal}
+        appointmentId={appointmentIdToPrescribe}
         refreshAppointments={refreshAppointments}
       />
     </div>

@@ -75,6 +75,10 @@ const AppNavbar = () => {
                 <NavDropdown.Item as={Link} to="/doctors/with-specialities">
                   Doctors with Specialities
                 </NavDropdown.Item>
+                {/* Doctors with Patient Count Component */}
+                <NavDropdown.Item as={Link} to="/doctors/patient-count">
+                  Doctors with Patient Count
+                </NavDropdown.Item>
               </NavDropdown>
             )}
 

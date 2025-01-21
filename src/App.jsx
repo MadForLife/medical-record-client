@@ -12,6 +12,7 @@ import DetailedAppointment from "./components/DetailedAppointment";
 import PatientDiagnoseComponent from "./components/PatientDiagnoseComponent";
 import PatientsByDoctorComponent from "./components/PatientsByDoctorComponent";
 import MostFrequentDiagnoses from "./components/MostFrequentDiagnose";
+import DoctorsWithPatientCount from "./components/DoctorsWithPatientCount";
 
 function App() {
   return (
@@ -46,6 +47,10 @@ function App() {
         <Route
           path="/diagnoses/most-frequent"
           element={<MostFrequentDiagnoses />}
+        />
+        <Route
+          path="/doctors/patient-count"
+          element={<DoctorsWithPatientCount />}
         />
       </Routes>
     </Router>

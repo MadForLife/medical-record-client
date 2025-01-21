@@ -36,6 +36,16 @@ const AppNavbar = () => {
               Home
             </Nav.Link>
 
+            {/* Diagnoses Dropdown (Visible only for users with "mr_doctor" role) */}
+            {hasDoctorRole && (
+              <NavDropdown title="Diagnoses" id="diagnoses-dropdown">
+                {/* Most Frequent Diagnoses Link */}
+                <NavDropdown.Item as={Link} to="/diagnoses/most-frequent">
+                  Most Frequent Diagnoses
+                </NavDropdown.Item>
+              </NavDropdown>
+            )}
+
             {/* Patients Dropdown (Visible only if user has "mr_doctor" role) */}
             {hasDoctorRole && (
               <NavDropdown title="Patients" id="patients-dropdown">

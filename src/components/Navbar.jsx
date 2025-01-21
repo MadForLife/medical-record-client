@@ -45,9 +45,13 @@ const AppNavbar = () => {
                 <NavDropdown.Item as={Link} to="/patients/all">
                   All Patients
                 </NavDropdown.Item>
-                {/* New Button for PatientDiagnoseComponent */}
+                {/* Patients by Diagnose Component */}
                 <NavDropdown.Item as={Link} to="/patients/diagnoses">
                   Patients by Diagnose
+                </NavDropdown.Item>
+                {/* New Entry: Patients by Doctor Component */}
+                <NavDropdown.Item as={Link} to="/patients/by-doctor">
+                  Patients by Doctor
                 </NavDropdown.Item>
               </NavDropdown>
             )}

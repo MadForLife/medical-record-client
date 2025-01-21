@@ -9,6 +9,7 @@ import AllDoctorsWithSpecialities from "./components/AllDoctorsWithSpecialities"
 import AllAppointmentsByDoctorId from "./components/AllAppointmentsByDoctorId";
 import PatientAppointments from "./components/PatientAppointments";
 import DetailedAppointment from "./components/DetailedAppointment";
+import PatientDiagnoseComponent from "./components/PatientDiagnoseComponent";
 
 function App() {
   return (
@@ -31,6 +32,10 @@ function App() {
         <Route
           path="/appointments/detailed/:appointmentId"
           element={<DetailedAppointment />}
+        />
+        <Route
+          path="/patients/diagnoses"
+          element={<PatientDiagnoseComponent />}
         />
       </Routes>
     </Router>

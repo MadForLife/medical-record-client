@@ -7,6 +7,8 @@ import AllDoctors from "./components/AllDoctors";
 import Home from "./components/Home";
 import AllDoctorsWithSpecialities from "./components/AllDoctorsWithSpecialities";
 import AllAppointmentsByDoctorId from "./components/AllAppointmentsByDoctorId";
+import PatientAppointments from "./components/PatientAppointments";
+import DetailedAppointment from "./components/DetailedAppointment";
 
 function App() {
   return (
@@ -24,6 +26,11 @@ function App() {
         <Route
           path="/appointments/by-doctor"
           element={<AllAppointmentsByDoctorId />}
+        />
+        <Route path="/appointments/patient" element={<PatientAppointments />} />
+        <Route
+          path="/appointments/detailed/:appointmentId"
+          element={<DetailedAppointment />}
         />
       </Routes>
     </Router>

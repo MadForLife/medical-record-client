@@ -17,6 +17,7 @@ const AppNavbar = () => {
   };
 
   const hasDoctorRole = isAuthenticated && keycloak.hasRealmRole("mr_doctor");
+  const hasPatientRole = isAuthenticated && keycloak.hasRealmRole("mr_patient");
 
   return (
     <Navbar bg="dark" variant="dark" expand="lg">
@@ -62,6 +63,13 @@ const AppNavbar = () => {
             {/* Appointments Link as a separate button */}
             {hasDoctorRole && (
               <Nav.Link as={Link} to="/appointments/by-doctor">
+                My Appointments
+              </Nav.Link>
+            )}
+
+            {/* Patient Appointments (Visible only if user has "mr_patient" role) */}
+            {hasPatientRole && (
+              <Nav.Link as={Link} to="/appointments/patient">
                 My Appointments
               </Nav.Link>
             )}
